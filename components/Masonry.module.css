@@ -1,0 +1,15 @@
+/* Masonry.module.css */
+.myMasonryGrid {
+  display: flex;
+  margin-left: -20px; /* Khoảng cách giữa các cột */
+  width: auto;
+}
+
+.myMasonryColumn {
+  padding-left: 20px; /* Khoảng cách giữa các cột */
+  background-clip: padding-box;
+}
+
+.itemWrapper {
+  margin-bottom: 24px; /* Khoảng cách dưới mỗi item */
+}
