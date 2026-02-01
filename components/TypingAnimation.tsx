@@ -1,34 +1,75 @@
-import React from 'react';
-import { TypeAnimation } from 'react-type-animation';
+import React, { useState, useEffect } from 'react';
 
-export default function TypingAnimation(props: { 
-  texts?: string[]; 
-  speed?: number; 
-  className?: string;
-  textColor?: string; // Thêm prop này
-}) {
-  // 1. Dữ liệu mặc định nếu chưa nhập gì
-  const inputTexts = props.texts || ["Thiết kế Web", "Lập trình React", "Marketing Online"];
+// Định nghĩa Interface rõ ràng để tránh lỗi "Unexpected any"
+interface TypingAnimationProps {
+  text?: string;
+  speed?: number;     // Tốc độ gõ (ms)
+  delay?: number;     // Thời gian chờ trước khi xóa (ms)
+  className?: string; // Class CSS
+}
+
+export default function TypingAnimation({
+  text = 'Welcome to Plasmic',
+  speed = 100,
+  delay = 2000,
+  className = '',
+}: TypingAnimationProps) {
   
-  // 2. Xử lý dữ liệu: Biến mảng chữ thường thành mảng "sequence" của thư viện
-  // Cấu trúc sequence: [ "Chữ A", 2000ms nghỉ, "Chữ B", 2000ms nghỉ, ... ]
-  const sequence = inputTexts.flatMap(text => [text, 2000]); 
+  const [currentText, setCurrentText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [loopNum, setLoopNum] = useState(0);
+  const [typingSpeed, setTypingSpeed] = useState(speed);
 
-  // Tốc độ gõ: Props truyền vào (1-99), mặc định là 50
-  const typingSpeed = props.speed || 50;
+  useEffect(() => {
+    // Xử lý logic gõ/xóa
+    const handleTyping = () => {
+      const fullText = text;
+      
+      // Xác định text hiện tại dựa trên trạng thái đang gõ hay đang xóa
+      setCurrentText(prev => 
+        isDeleting 
+          ? fullText.substring(0, prev.length - 1) 
+          : fullText.substring(0, prev.length + 1)
+      );
+
+      // Tự điều chỉnh tốc độ
+      setTypingSpeed(isDeleting ? speed / 2 : speed);
+
+      // Kịch bản 1: Đã gõ xong toàn bộ chữ
+      if (!isDeleting && currentText === fullText) {
+        setTimeout(() => setIsDeleting(true), delay); // Chờ một chút rồi xóa
+      } 
+      // Kịch bản 2: Đã xóa hết sạch
+      else if (isDeleting && currentText === '') {
+        setIsDeleting(false);
+        setLoopNum(loopNum + 1); // Bắt đầu vòng lặp mới
+      }
+    };
+
+    const timer = setTimeout(handleTyping, typingSpeed);
+
+    // Cleanup function để tránh memory leak
+    return () => clearTimeout(timer);
+  }, [currentText, isDeleting, loopNum, text, speed, delay, typingSpeed]);
 
   return (
-    <div className={props.className}>
-      <TypeAnimation
-  sequence={sequence}
-  speed={typingSpeed as any} // Ép kiểu để tránh lỗi TS nếu cần
-  style={{ 
-    fontSize: '2em', // Bạn có thể thêm font size prop nếu muốn
-    display: 'inline-block', 
-    color: props.textColor 
-  }}
-  repeat={Infinity}
-/>
-    </div>
+    <span className={className}>
+      {currentText}
+      <span className="cursor">|</span>
+
+      {/* CSS cho con trỏ nhấp nháy */}
+      <style jsx>{`
+        .cursor {
+          display: inline-block;
+          margin-left: 2px;
+          animation: blink 1s step-end infinite;
+          font-weight: 100;
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
+    </span>
   );
 }

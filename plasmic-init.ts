@@ -121,18 +121,18 @@ PLASMIC.registerComponent(TypingAnimation, {
   props: {
     text: {
       type: 'string',
-      defaultValue: 'Xin chào, đây là hiệu ứng gõ chữ...',
-      description: 'Nội dung văn bản cần hiển thị',
+      defaultValue: 'Design. Build. Ship.',
+      description: 'Nội dung chữ cần chạy hiệu ứng',
     },
     speed: {
       type: 'number',
       defaultValue: 100,
       description: 'Tốc độ gõ (ms) - Số càng nhỏ gõ càng nhanh',
     },
-    showCursor: {
-      type: 'boolean',
-      defaultValue: true,
-      description: 'Hiển thị con trỏ nhấp nháy',
+    delay: {
+      type: 'number',
+      defaultValue: 2000,
+      description: 'Thời gian dừng lại sau khi gõ xong trước khi xóa (ms)',
     },
   },
 });
