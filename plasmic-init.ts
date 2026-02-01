@@ -121,18 +121,19 @@ PLASMIC.registerComponent(TypingAnimation, {
   props: {
     text: {
       type: 'string',
-      defaultValue: 'Design. Build. Ship.',
-      description: 'Nội dung chữ cần chạy hiệu ứng',
+      // Cập nhật hướng dẫn sử dụng ở đây
+      defaultValue: 'UI/UX Design, Brand Identity, SEO Optimization, Web Development',
+      description: 'Nhập các từ khóa ngăn cách bởi dấu phẩy (,) để chạy hiệu ứng lặp lại.',
     },
     speed: {
       type: 'number',
       defaultValue: 100,
-      description: 'Tốc độ gõ (ms) - Số càng nhỏ gõ càng nhanh',
+      description: 'Tốc độ gõ (ms)',
     },
     delay: {
       type: 'number',
-      defaultValue: 2000,
-      description: 'Thời gian dừng lại sau khi gõ xong trước khi xóa (ms)',
+      defaultValue: 1500,
+      description: 'Thời gian dừng lại khi gõ xong một từ (ms)',
     },
   },
 });
