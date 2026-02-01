@@ -1,44 +1,72 @@
-import React, { useEffect, useState } from "react";
+// components/TypingAnimation.tsx
+import React, { useState, useEffect } from 'react';
 
-type Props = {
-  texts?: string[];
+interface TypingAnimationProps {
+  /** Nội dung văn bản cần gõ */
+  text?: string;
+  /** Tốc độ gõ (ms), mặc định 100ms */
   speed?: number;
-  textColor?: string;
-};
+  /** Class CSS tùy chỉnh */
+  className?: string;
+  /** Có hiện con trỏ nhấp nháy không? */
+  showCursor?: boolean;
+}
 
-export const TypingAnimation: React.FC<Props> = ({
-  texts = ["Sáng tạo", "Chuyên nghiệp", "Tận tâm"],
-  speed = 50,
-  textColor,
-}) => {
-  const [index, setIndex] = useState(0);
-  const [display, setDisplay] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+export default function TypingAnimation({
+  text = '',
+  speed = 100,
+  className = '',
+  showCursor = true,
+}: TypingAnimationProps) {
+  const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {
-    const arr = Array.isArray(texts) ? texts : [String(texts)];
-    const current = arr[index % arr.length] ?? "";
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    // Reset khi text thay đổi
+    setDisplayedText(''); 
+    
+    if (!text) return;
 
-    if (!isDeleting && display.length < current.length) {
-      timer = setTimeout(() => setDisplay(current.slice(0, display.length + 1)), speed);
-    } else if (!isDeleting && display.length === current.length) {
-      timer = setTimeout(() => setIsDeleting(true), 800);
-    } else if (isDeleting && display.length > 0) {
-      timer = setTimeout(() => setDisplay(current.slice(0, display.length - 1)), Math.max(20, Math.floor(speed / 2)));
-    } else if (isDeleting && display.length === 0) {
-      timer = setTimeout(() => {
-        setIsDeleting(false);
-        setIndex((i) => (i + 1) % arr.length);
-      }, 200);
-    }
+    let currentIndex = 0;
+    const intervalId = setInterval(() => {
+      // Nếu chưa gõ hết chuỗi
+      if (currentIndex < text.length) {
+        // Lấy chuỗi con từ 0 đến ký tự hiện tại
+        // Dùng slice an toàn hơn cộng chuỗi trực tiếp
+        setDisplayedText(text.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        // Gõ xong thì xóa interval
+        clearInterval(intervalId);
+      }
+    }, speed);
 
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [display, isDeleting, index, texts, speed]);
+    // Cleanup function để tránh memory leak khi component unmount
+    return () => clearInterval(intervalId);
+  }, [text, speed]);
 
-  return <span style={{ color: textColor || undefined }}>{display}</span>;
-};
+  return (
+    <span className={className}>
+      {displayedText}
+      
+      {/* Hiệu ứng con trỏ nhấp nháy */}
+      {showCursor && (
+        <span className="typing-cursor">|</span>
+      )}
 
-export default TypingAnimation;
+      {/* Style nội bộ cho con trỏ (Next.js hỗ trợ style jsx) */}
+      <style jsx>{`
+        .typing-cursor {
+          display: inline-block;
+          margin-left: 2px;
+          font-weight: 400;
+          animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
+    </span>
+  );
+}

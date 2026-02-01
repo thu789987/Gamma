@@ -28,6 +28,7 @@ import TextRotator from "./components/TextRotator";
 import { MasonryLayout } from "./components/MasonryLayout";
 import HoverReveal from './components/HoverReveal'; // Nhớ import đúng đường dẫn
 import PatternGrid from './components/PatternGrid';
+import TypingAnimation from './components/TypingAnimation';
 import { propagateServerField } from "next/dist/server/lib/render-server";
 
 PLASMIC.registerComponent(Markdown, {
@@ -113,4 +114,25 @@ PLASMIC.registerComponent(PatternGrid, {
     }
   },
   importPath: "./components/PatternGrid", // 👈 Đã thêm dòng này
+});
+
+PLASMIC.registerComponent(TypingAnimation, {
+  name: 'TypingAnimation',
+  props: {
+    text: {
+      type: 'string',
+      defaultValue: 'Xin chào, đây là hiệu ứng gõ chữ...',
+      description: 'Nội dung văn bản cần hiển thị',
+    },
+    speed: {
+      type: 'number',
+      defaultValue: 100,
+      description: 'Tốc độ gõ (ms) - Số càng nhỏ gõ càng nhanh',
+    },
+    showCursor: {
+      type: 'boolean',
+      defaultValue: true,
+      description: 'Hiển thị con trỏ nhấp nháy',
+    },
+  },
 });
