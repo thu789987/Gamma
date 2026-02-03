@@ -29,6 +29,7 @@ import { MasonryLayout } from "./components/MasonryLayout";
 import HoverReveal from './components/HoverReveal'; // Nhớ import đúng đường dẫn
 import PatternGrid from './components/PatternGrid';
 import TypingAnimation from './components/TypingAnimation';
+import { GridDistortion } from './components/GridDistortion';
 import { propagateServerField } from "next/dist/server/lib/render-server";
 
 PLASMIC.registerComponent(Markdown, {
@@ -136,4 +137,36 @@ PLASMIC.registerComponent(TypingAnimation, {
       description: 'Thời gian dừng lại khi gõ xong một từ (ms)',
     },
   },
+});
+
+PLASMIC.registerComponent(GridDistortion, {
+  name: 'GridDistortion',
+  props: {
+    gridSpacing: {
+      type: 'number',
+      defaultValue: 40,
+      description: 'Khoảng cách giữa các chấm (px)'
+    },
+    dotSize: {
+      type: 'number',
+      defaultValue: 2,
+      description: 'Kích thước chấm tròn'
+    },
+    cursorRadius: {
+      type: 'number',
+      defaultValue: 120,
+      description: 'Bán kính vùng ảnh hưởng của chuột'
+    },
+    repulsion: {
+      type: 'number',
+      defaultValue: 50,
+      description: 'Lực đẩy (Số càng lớn đẩy càng mạnh)'
+    },
+    color: {
+      type: 'color',
+      defaultValue: '#555555',
+      displayName: 'Dot Color'
+    }
+  },
+  importPath: './components/GridDistortion', 
 });
