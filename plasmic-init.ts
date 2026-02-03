@@ -32,6 +32,7 @@ import TypingAnimation from './components/TypingAnimation';
 import GridDistortion from './components/GridDistortion';
 import { RevealOnScroll } from './components/RevealOnScroll';
 import { propagateServerField } from "next/dist/server/lib/render-server";
+import { SmoothScroll } from './components/SmoothScroll';
 
 PLASMIC.registerComponent(Markdown, {
   name: "Markdown",
@@ -211,4 +212,30 @@ PLASMIC.registerComponent(RevealOnScroll, {
     }
   },
   importPath: "./components/RevealOnScroll"
+});
+
+PLASMIC.registerComponent(SmoothScroll, {
+  name: "SmoothScroll",
+  props: {
+    children: "slot",
+    duration: {
+      type: "number",
+      defaultValue: 1.2,
+      displayName: "Smoothness (Duration)",
+      description: "Độ trễ mượt (1.2 là chuẩn, 2.0 là rất mượt/chậm)",
+      min: 0.1,
+      max: 5,
+      step: 0.1
+    },
+    wheelMultiplier: {
+      type: "number",
+      defaultValue: 1,
+      displayName: "Scroll Speed",
+      description: "Tốc độ cuộn (1 là mặc định, 2 là nhanh gấp đôi)",
+      min: 0.1,
+      max: 5,
+      step: 0.1
+    }
+  },
+  importPath: "./components/SmoothScroll"
 });
