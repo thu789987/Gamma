@@ -33,6 +33,7 @@ import GridDistortion from './components/GridDistortion';
 import { RevealOnScroll } from './components/RevealOnScroll';
 import { propagateServerField } from "next/dist/server/lib/render-server";
 import { SmoothScroll } from './components/SmoothScroll';
+import ScrollWrapper from './components/ScrollWrapper';
 
 PLASMIC.registerComponent(Markdown, {
   name: "Markdown",
@@ -238,4 +239,18 @@ PLASMIC.registerComponent(SmoothScroll, {
     }
   },
   importPath: "./components/SmoothScroll"
+});
+
+PLASMIC.registerComponent(ScrollWrapper, {
+  name: "ScrollWrapper",
+  props: {
+    children: "slot",
+    threshold: {
+      type: "number",
+      defaultValue: 50,
+      displayName: "Scroll Threshold",
+      description: "Số pixel cần cuộn để kích hoạt hiệu ứng"
+    }
+  },
+  importPath: "./components/ScrollWrapper"
 });
