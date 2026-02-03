@@ -134,12 +134,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       const imageAspect = imageAspectRef.current;
 
       if (plane) {
-        // Logic mô phỏng 'background-size: cover'
-        // Chúng ta scale plane sao cho nó luôn phủ kín container
-        const scale = Math.max(containerAspect / imageAspect, 1);
-        // Lưu ý: Logic này tương đối đơn giản cho Orthographic Camera
-        // Để cover hoàn hảo không méo cần tính toán kỹ hơn về UV trong shader
-        // Ở đây ta chấp nhận scale plane theo tỷ lệ khung hình
+        // Chỉ cần giữ lại dòng này
         plane.scale.set(containerAspect, 1, 1); 
       }
       
