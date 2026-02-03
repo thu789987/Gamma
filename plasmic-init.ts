@@ -30,6 +30,7 @@ import HoverReveal from './components/HoverReveal'; // Nhớ import đúng đư�
 import PatternGrid from './components/PatternGrid';
 import TypingAnimation from './components/TypingAnimation';
 import GridDistortion from './components/GridDistortion';
+import { RevealOnScroll } from './components/RevealOnScroll';
 import { propagateServerField } from "next/dist/server/lib/render-server";
 
 PLASMIC.registerComponent(Markdown, {
@@ -171,4 +172,43 @@ PLASMIC.registerComponent(GridDistortion, {
     }
   },
   importPath: "./components/GridDistortion"
+});
+
+PLASMIC.registerComponent(RevealOnScroll, {
+  name: "RevealOnScroll",
+  props: {
+    // Slot để thả các Layer khác vào
+    children: {
+      type: "slot",
+      defaultValue: {
+        type: "vbox",
+        styles: { padding: "20px" },
+        children: ["Kéo nội dung cần hiệu ứng vào đây"]
+      }
+    },
+    // Các tùy chỉnh animation
+    duration: {
+      type: "number",
+      displayName: "Duration (s)",
+      defaultValue: 0.8,
+      min: 0.1,
+      max: 5,
+      step: 0.1
+    },
+    delay: {
+      type: "number",
+      displayName: "Delay (s)",
+      defaultValue: 0,
+      min: 0,
+      max: 5,
+      step: 0.1
+    },
+    yOffset: {
+      type: "number",
+      displayName: "Y Distance (px)",
+      defaultValue: 50,
+      description: "Khoảng cách trồi lên (50 là vừa đẹp)"
+    }
+  },
+  importPath: "./components/RevealOnScroll"
 });
