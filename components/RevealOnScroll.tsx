@@ -1,7 +1,7 @@
-"use client"; // 👈 QUAN TRỌNG: Dòng này giúp Animation chạy đúng trên trình duyệt
+"use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useRef } from "react";
+import { motion, useInView, useAnimation } from "framer-motion";
 
 interface RevealOnScrollProps {
   children: React.ReactNode;
@@ -18,34 +18,49 @@ export function RevealOnScroll({
   delay = 0,
   yOffset = 50
 }: RevealOnScrollProps) {
+  // 1. Tạo Ref để theo dõi cái khung bao ngoài
+  const ref = useRef(null);
+  
+  // 2. Dùng Hook để kiểm tra xem khung bao ngoài đã vào màn hình chưa
+  // once: true -> Chỉ chạy 1 lần
+  // amount: 0.1 -> Chỉ cần lú ra 10% là báo tín hiệu ngay
+  const isInView = useInView(ref, { once: true, amount: 0.1 });
+
+  // 3. Công cụ điều khiển Animation thủ công
+  const mainControls = useAnimation();
+
+  // 4. Lắng nghe thay đổi: Khi vừa thấy (isInView = true) -> Ra lệnh chạy ngay
+  useEffect(() => {
+    if (isInView) {
+      mainControls.start("visible");
+    }
+  }, [isInView, mainControls]);
+
   return (
-    <div className={className} style={{ overflow: 'hidden' }}>
+    // Cái thẻ div này đóng vai trò là "cảm biến" vị trí (Sensor)
+    <div ref={ref} className={className} style={{ position: "relative", overflow: "visible" }}>
       <motion.div
-        // 1. Định nghĩa trạng thái Ẩn (Hidden) và Hiện (Visible)
+        // 5. Cài đặt các trạng thái biến thiên
         variants={{
           hidden: { opacity: 0, y: yOffset },
           visible: { opacity: 1, y: 0 }
         }}
 
-        // 2. Gán trạng thái ban đầu là 'hidden'
+        // 6. QUAN TRỌNG: Gán cứng trạng thái ban đầu là "hidden"
         initial="hidden"
+        
+        // 7. Animation sẽ nghe lệnh từ biến mainControls (thay vì tự động)
+        animate={mainControls}
 
-        // 3. Khi lọt vào khung hình thì chuyển sang 'visible'
-        whileInView="visible"
-
-        // 4. CẤU HÌNH LẠI VIEWPORT (Quan trọng)
-        viewport={{ 
-          once: true,    // Chỉ chạy 1 lần
-          amount: 0.3,   // 👇 Phải nhìn thấy 30% nội dung mới bắt đầu chạy (tránh chạy sớm)
-          margin: "0px 0px -50px 0px" // Thụt lề dưới một chút để chắc chắn người dùng đang cuộn xuống
-        }}
-
-        // 5. Cấu hình chuyển động
+        // 8. Cấu hình độ mượt
         transition={{ 
           duration: duration, 
-          delay: delay, 
-          ease: "easeOut" // Dùng easeOut mặc định cho mượt
+          delay: delay,
+          ease: [0.25, 0.25, 0, 1] // Ease Out Cubic (Mượt mà)
         }}
+        
+        // Fix lỗi CSS: Đảm bảo phần tử block chiếm đủ không gian
+        style={{ width: "100%" }} 
       >
         {children}
       </motion.div>
