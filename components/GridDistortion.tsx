@@ -120,7 +120,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     planeRef.current = plane;
     scene.add(plane);
 
-    // 5. Handle Resize
+  // 5. Handle Resize
     const handleResize = () => {
       if (!container || !renderer || !camera) return;
       const rect = container.getBoundingClientRect();
@@ -131,10 +131,10 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       uniforms.resolution.value.set(width, height, 1, 1);
 
       const containerAspect = width / height;
-      const imageAspect = imageAspectRef.current;
+
+      // 👇 Đã xóa dòng khai báo imageAspect thừa ở đây
 
       if (plane) {
-        // Chỉ cần giữ lại dòng này
         plane.scale.set(containerAspect, 1, 1); 
       }
       
