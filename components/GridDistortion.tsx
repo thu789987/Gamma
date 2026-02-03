@@ -1,7 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 
-// 1. Định nghĩa kiểu dữ liệu cho Props (Để sửa lỗi "implicitly has an any type")
 interface GridDistortionProps {
   imageSrc?: string;
   grid?: number;
@@ -11,7 +10,6 @@ interface GridDistortionProps {
   className?: string;
 }
 
-// --- SHADERS ---
 const vertexShader = `
 uniform float time;
 varying vec2 vUv;
@@ -41,20 +39,22 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
   relaxation = 0.9,
   className = ''
 }) => {
-  // Định nghĩa Type cho useRef để tránh lỗi object is possibly null
   const containerRef = useRef<HTMLDivElement>(null);
+  // State để lưu tỷ lệ ảnh (Mặc định là 16:9 để không bị xẹp lúc chưa load)
+  const [aspectRatio, setAspectRatio] = useState<number>(16/9); 
+
+  // Các Ref giữ nguyên
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const planeRef = useRef<THREE.Mesh | null>(null);
   const animationIdRef = useRef<number | null>(null);
-  const imageAspectRef = useRef<number>(1);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // 1. Setup Three.js
+    // --- SETUP THREE.JS ---
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
@@ -77,26 +77,29 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     const uniforms = {
       time: { value: 0 },
       resolution: { value: new THREE.Vector4() },
-      uTexture: { value: new THREE.Texture() }, // Khởi tạo texture rỗng để tránh lỗi null
+      uTexture: { value: new THREE.Texture() },
       uDataTexture: { value: new THREE.DataTexture() }
     };
 
-    // 2. Load Image
+    // --- LOAD IMAGE & TÍNH ASPECT RATIO ---
     const textureLoader = new THREE.TextureLoader();
-    // Ảnh mặc định nếu không có imageSrc
     const currentImage = imageSrc || 'https://via.placeholder.com/800x600/cccccc/969696?text=No+Image';
     
     textureLoader.load(currentImage, (texture) => {
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
+      
+      // 👇 LOGIC MỚI: Cập nhật tỷ lệ khung hình dựa trên ảnh thật
       if (texture.image) {
-          imageAspectRef.current = texture.image.width / texture.image.height;
+         const ratio = texture.image.width / texture.image.height;
+         setAspectRatio(ratio); // Cập nhật state để CSS bên dưới tự chỉnh height
       }
+
       uniforms.uTexture.value = texture;
       handleResize(); 
     });
 
-    // 3. Grid Data (Physics)
+    // --- SETUP DATA TEXTURE (PHYSICS) ---
     const size = grid;
     const data = new Float32Array(4 * size * size);
     for (let i = 0; i < size * size; i++) {
@@ -107,7 +110,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     dataTexture.needsUpdate = true;
     uniforms.uDataTexture.value = dataTexture;
 
-    // 4. Mesh
+    // --- MESH ---
     const material = new THREE.ShaderMaterial({
       side: THREE.DoubleSide,
       uniforms,
@@ -120,7 +123,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     planeRef.current = plane;
     scene.add(plane);
 
-  // 5. Handle Resize
+    // --- HANDLE RESIZE ---
     const handleResize = () => {
       if (!container || !renderer || !camera) return;
       const rect = container.getBoundingClientRect();
@@ -132,9 +135,9 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
 
       const containerAspect = width / height;
 
-      // 👇 Đã xóa dòng khai báo imageAspect thừa ở đây
-
       if (plane) {
+        // Vì Container đã được CSS ép đúng tỷ lệ ảnh, nên ta chỉ cần scale plane theo containerAspect
+        // là ảnh sẽ hiển thị chuẩn 100%, không méo, không cắt.
         plane.scale.set(containerAspect, 1, 1); 
       }
       
@@ -147,42 +150,33 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       camera.updateProjectionMatrix();
     };
 
-    // 6. Mouse Events
+    // --- EVENTS ---
     const mouseState = { x: 0, y: 0, prevX: 0, prevY: 0, vX: 0, vY: 0 };
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1 - (e.clientY - rect.top) / rect.height;
-      
       mouseState.vX = x - mouseState.prevX;
       mouseState.vY = y - mouseState.prevY;
-      mouseState.x = x;
-      mouseState.y = y;
-      mouseState.prevX = x;
-      mouseState.prevY = y;
+      Object.assign(mouseState, { x, y, prevX: x, prevY: y });
     };
 
     container.addEventListener('mousemove', handleMouseMove);
-    
     const resizeObserver = new ResizeObserver(() => handleResize());
     resizeObserver.observe(container);
 
-    // 7. Animation Loop
+    // --- ANIMATION LOOP ---
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
       if (!renderer || !scene || !camera) return;
-
       uniforms.time.value += 0.05;
 
-      // Update Physics
-if (dataTexture && dataTexture.image && dataTexture.image.data) {
+      if (dataTexture && dataTexture.image && dataTexture.image.data) {
           const data = dataTexture.image.data;
-
           for (let i = 0; i < size * size; i++) {
             data[i * 4] *= relaxation;
             data[i * 4 + 1] *= relaxation;
           }
-
           const gridMouseX = size * mouseState.x;
           const gridMouseY = size * mouseState.y;
           const maxDist = size * mouse;
@@ -193,8 +187,6 @@ if (dataTexture && dataTexture.image && dataTexture.image.data) {
               if (distSq < maxDist * maxDist) {
                 const index = 4 * (i + size * j);
                 const power = Math.min(maxDist / Math.sqrt(distSq), 10);
-                // TypeScript có thể vẫn báo lỗi ở đây nếu không biết data là mảng số
-                // Ép kiểu nhẹ để chắc chắn
                 data[index] += strength * 100 * mouseState.vX * power;
                 data[index + 1] -= strength * 100 * mouseState.vY * power;
               }
@@ -210,23 +202,26 @@ if (dataTexture && dataTexture.image && dataTexture.image.data) {
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       resizeObserver.disconnect();
       container.removeEventListener('mousemove', handleMouseMove);
-      if (renderer) {
-          renderer.dispose();
-          // Xóa canvas khỏi DOM để tránh duplicate khi re-render
-          if (container.contains(renderer.domElement)) {
-              container.removeChild(renderer.domElement);
-          }
-      }
-      // Cleanup texture (quan trọng để tránh tràn bộ nhớ)
+      if (renderer) renderer.dispose();
       if (uniforms.uTexture.value) uniforms.uTexture.value.dispose();
       if (uniforms.uDataTexture.value) uniforms.uDataTexture.value.dispose();
     };
-  }, [imageSrc, grid, mouse, strength, relaxation]);
+  }, [imageSrc, grid, mouse, strength, relaxation]); // Re-run khi ảnh đổi
 
   return (
     <div 
       ref={containerRef} 
       className={className}
+      style={{
+        width: '100%',
+        // 👇 QUAN TRỌNG: Dùng aspectRatio để tự tính chiều cao theo ảnh
+        // Nếu width thay đổi, height sẽ tự chạy theo.
+        aspectRatio: `${aspectRatio}`, 
+        
+        // height: 'auto' là mặc định nên không cần set, nhưng đảm bảo không set fixed height
+        position: 'relative',
+        overflow: 'hidden'
+      }}
     />
   );
 };
