@@ -56,8 +56,8 @@ export function SmoothScroll({
     };
   }, [inEditor, duration, wheelMultiplier]);
 
-  return (
-    <div className={className} style={{ width: '100%', minHeight: '100vh' }}>
+    return (
+    <div className={className}>
       {children}
     </div>
   );
