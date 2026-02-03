@@ -29,7 +29,7 @@ import { MasonryLayout } from "./components/MasonryLayout";
 import HoverReveal from './components/HoverReveal'; // Nhớ import đúng đường dẫn
 import PatternGrid from './components/PatternGrid';
 import TypingAnimation from './components/TypingAnimation';
-import { GridDistortionWrapper } from './components/GridDistortionWrapper';
+import GridDistortion from './components/GridDistortion';
 import { propagateServerField } from "next/dist/server/lib/render-server";
 
 PLASMIC.registerComponent(Markdown, {
@@ -139,41 +139,36 @@ PLASMIC.registerComponent(TypingAnimation, {
   },
 });
 
-PLASMIC.registerComponent(GridDistortionWrapper, {
-  name: 'GridDistortionWrapper', // Đặt tên mới cho dễ phân biệt
+PLASMIC.registerComponent(GridDistortion, {
+  name: "GridDistortion",
   props: {
-    // 👇 THÊM DÒNG NÀY ĐỂ TẠO SLOT KÉO THẢ
-    children: {
-      type: "slot",
-      defaultValue: [{ type: "text", value: "Kéo nội dung vào đây để có hiệu ứng nền" }],
+    // Chỉ cần chọn ảnh
+    imageSrc: {
+      type: "imageUrl",
+      displayName: "Image Source",
+      defaultValue: "https://picsum.photos/1920/1080",
     },
-    // Các props cũ giữ nguyên
-    gridSpacing: {
-      type: 'number',
-      defaultValue: 40,
-      description: 'Khoảng cách giữa các chấm (px)'
+    // Các thông số chỉnh độ méo
+    grid: {
+      type: "number",
+      defaultValue: 20,
+      displayName: "Grid Size"
     },
-    dotSize: {
-      type: 'number',
-      defaultValue: 2,
-      description: 'Kích thước chấm tròn'
+    mouse: {
+      type: "number",
+      defaultValue: 0.1,
+      displayName: "Mouse Radius"
     },
-    cursorRadius: {
-      type: 'number',
-      defaultValue: 120,
-      description: 'Bán kính vùng ảnh hưởng của chuột'
+    strength: {
+      type: "number",
+      defaultValue: 0.25,
+      displayName: "Distortion Strength"
     },
-    repulsion: {
-      type: 'number',
-      defaultValue: 80,
-      description: 'Lực đẩy mạnh hay nhẹ'
-    },
-    color: {
-      type: 'color',
-      defaultValue: '#88888850', // Nên để màu hơi trong suốt một chút
-      displayName: 'Dot Color'
+    relaxation: {
+      type: "number",
+      defaultValue: 0.9,
+      displayName: "Relaxation"
     }
   },
-  // Nhớ đổi đường dẫn nếu cần
-  importPath: './components/GridDistortionWrapper', 
+  importPath: "./components/GridDistortion"
 });
