@@ -1,12 +1,14 @@
+"use client"; // 👈 QUAN TRỌNG: Dòng này giúp Animation chạy đúng trên trình duyệt
+
 import React from "react";
 import { motion } from "framer-motion";
 
 interface RevealOnScrollProps {
   children: React.ReactNode;
-  className?: string; // Để Plasmic truyền style layout vào
-  duration?: number;  // Thời gian chạy animation (giây)
-  delay?: number;     // Độ trễ (giây)
-  yOffset?: number;   // Khoảng cách trồi lên (mặc định 50px)
+  className?: string;
+  duration?: number;
+  delay?: number;
+  yOffset?: number;
 }
 
 export function RevealOnScroll({
@@ -19,23 +21,30 @@ export function RevealOnScroll({
   return (
     <div className={className} style={{ overflow: 'hidden' }}>
       <motion.div
-        // 1. Trạng thái ban đầu (Ẩn + Dịch xuống dưới)
-        initial={{ opacity: 0, y: yOffset }}
-        
-        // 2. Trạng thái khi lọt vào màn hình (Hiện + Về vị trí cũ)
-        whileInView={{ opacity: 1, y: 0 }}
-        
-        // 3. Cấu hình Viewport
-        viewport={{ 
-          once: true,   // Chỉ chạy 1 lần duy nhất
-          margin: "-10% 0px -10% 0px" // Thụt vào 10% màn hình mới bắt đầu chạy (để đỡ bị chạy sớm quá)
+        // 1. Định nghĩa trạng thái Ẩn (Hidden) và Hiện (Visible)
+        variants={{
+          hidden: { opacity: 0, y: yOffset },
+          visible: { opacity: 1, y: 0 }
         }}
-        
-        // 4. Cấu hình chuyển động
+
+        // 2. Gán trạng thái ban đầu là 'hidden'
+        initial="hidden"
+
+        // 3. Khi lọt vào khung hình thì chuyển sang 'visible'
+        whileInView="visible"
+
+        // 4. CẤU HÌNH LẠI VIEWPORT (Quan trọng)
+        viewport={{ 
+          once: true,    // Chỉ chạy 1 lần
+          amount: 0.3,   // 👇 Phải nhìn thấy 30% nội dung mới bắt đầu chạy (tránh chạy sớm)
+          margin: "0px 0px -50px 0px" // Thụt lề dưới một chút để chắc chắn người dùng đang cuộn xuống
+        }}
+
+        // 5. Cấu hình chuyển động
         transition={{ 
           duration: duration, 
           delay: delay, 
-          ease: [0.25, 0.25, 0, 1] // Ease Out Cubic (mượt mà)
+          ease: "easeOut" // Dùng easeOut mặc định cho mượt
         }}
       >
         {children}
