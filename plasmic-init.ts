@@ -29,7 +29,7 @@ import { MasonryLayout } from "./components/MasonryLayout";
 import HoverReveal from './components/HoverReveal'; // Nhớ import đúng đường dẫn
 import PatternGrid from './components/PatternGrid';
 import TypingAnimation from './components/TypingAnimation';
-import { GridDistortion } from './components/GridDistortion';
+import { GridDistortionWrapper } from './components/GridDistortionWrapper';
 import { propagateServerField } from "next/dist/server/lib/render-server";
 
 PLASMIC.registerComponent(Markdown, {
@@ -139,9 +139,15 @@ PLASMIC.registerComponent(TypingAnimation, {
   },
 });
 
-PLASMIC.registerComponent(GridDistortion, {
-  name: 'GridDistortion',
+PLASMIC.registerComponent(GridDistortionWrapper, {
+  name: 'GridDistortionWrapper', // Đặt tên mới cho dễ phân biệt
   props: {
+    // 👇 THÊM DÒNG NÀY ĐỂ TẠO SLOT KÉO THẢ
+    children: {
+      type: "slot",
+      defaultValue: [{ type: "text", value: "Kéo nội dung vào đây để có hiệu ứng nền" }],
+    },
+    // Các props cũ giữ nguyên
     gridSpacing: {
       type: 'number',
       defaultValue: 40,
@@ -159,14 +165,15 @@ PLASMIC.registerComponent(GridDistortion, {
     },
     repulsion: {
       type: 'number',
-      defaultValue: 50,
-      description: 'Lực đẩy (Số càng lớn đẩy càng mạnh)'
+      defaultValue: 80,
+      description: 'Lực đẩy mạnh hay nhẹ'
     },
     color: {
       type: 'color',
-      defaultValue: '#555555',
+      defaultValue: '#88888850', // Nên để màu hơi trong suốt một chút
       displayName: 'Dot Color'
     }
   },
-  importPath: './components/GridDistortion', 
+  // Nhớ đổi đường dẫn nếu cần
+  importPath: './components/GridDistortionWrapper', 
 });
