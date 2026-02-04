@@ -2,35 +2,38 @@ import React, { useState } from 'react';
 import { DataProvider } from '@plasmicapp/loader-nextjs'; 
 
 interface HoverControllerProps {
-  children: React.ReactNode; // Nội dung chính
-  trigger: React.ReactNode;  // Cái nút (Vùng cảm ứng)
+  children?: React.ReactNode; // Thêm dấu ? để báo là có thể không có
+  trigger: React.ReactNode;
   className?: string;
 }
 
 export function HoverController({ children, trigger, className }: HoverControllerProps) {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Kiểm tra xem thực sự có nội dung trong slot Children hay không
+  // (Đôi khi Plasmic truyền mảng rỗng, nên cần kiểm tra kỹ hơn chút)
+  const hasChildren = React.Children.count(children) > 0;
+
   return (
-    // 1. Truyền biến isHovered xuống cho Plasmic dùng
     <DataProvider name="hoverData" data={{ isHovered: isHovered }}>
       <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         
-        {/* 2. Vùng Cảm Ứng (Cái Nút) */}
+        {/* 1. Phần Trigger (Luôn hiện) */}
         <div 
-          // Khi chuột vào nút -> Bật true
           onMouseEnter={() => setIsHovered(true)}
-          // Khi chuột rời nút -> Tắt false
           onMouseLeave={() => setIsHovered(false)}
-          
-          style={{ width: 'fit-content' }} // Để vùng hover bao vừa khít cái nút
+          style={{ width: 'fit-content' }}
         >
           {trigger}
         </div>
 
-        {/* 3. Phần nội dung còn lại (Sẽ biến đổi theo isHovered) */}
-        <div>
-          {children}
-        </div>
+        {/* 2. Phần Children (Chỉ hiện khi có nội dung) */}
+        {/* Logic: Nếu biến hasChildren là True thì mới render đoạn sau && */}
+        {hasChildren && (
+          <div>
+            {children}
+          </div>
+        )}
 
       </div>
     </DataProvider>
