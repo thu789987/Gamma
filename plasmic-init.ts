@@ -34,6 +34,7 @@ import { RevealOnScroll } from './components/RevealOnScroll';
 import { propagateServerField } from "next/dist/server/lib/render-server";
 import { SmoothScroll } from './components/SmoothScroll';
 import ScrollDetector from './components/ScrollDetector';
+import { HoverController } from './components/HoverController';
 
 PLASMIC.registerComponent(Markdown, {
   name: "Markdown",
@@ -254,4 +255,22 @@ PLASMIC.registerComponent(ScrollDetector, {
   // Quan trọng: Khai báo dữ liệu đầu ra để Plasmic hiểu
   providesData: true, 
   importPath: "./components/ScrollDetector"
+});
+
+PLASMIC.registerComponent(HoverController, {
+  name: "HoverController",
+  props: {
+    // Slot 1: Dành riêng cho cái nút để bắt sự kiện hover
+    trigger: {
+      type: "slot",
+      defaultValue: {
+        type: "button",
+        value: "Hover Me (Nút Kích Hoạt)"
+      }
+    },
+    // Slot 2: Nội dung còn lại
+    children: "slot"
+  },
+  providesData: true, // Quan trọng: Để Plasmic thấy được biến isHovered
+  importPath: "./components/HoverController"
 });
