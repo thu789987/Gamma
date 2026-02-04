@@ -27,19 +27,33 @@ export function HoverController({
     }
   };
 
-  return (
+return (
     <DataProvider name="hoverData" data={{ isHovered: isHovered }}>
-      <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div 
+        className={className} 
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '10px',
+          // 👇 THÊM 2 DÒNG NÀY ĐỂ ÉP XÓA BORDER
+          border: 'none', 
+          outline: 'none'
+        }}
+      >
         
         <div 
           onMouseEnter={() => handleHover(true)}
           onMouseLeave={() => handleHover(false)}
-          style={{ width: 'fit-content' }}
+          // 👇 Thêm border: none vào cả chỗ này cho chắc chắn
+          style={{ width: 'fit-content', border: 'none' }} 
         >
           {trigger}
         </div>
 
-        {children}
+        {/* Kiểm tra xem có phải nội dung bên trong children có border không */}
+        <div style={{ border: 'none' }}>
+           {children}
+        </div>
 
       </div>
     </DataProvider>
