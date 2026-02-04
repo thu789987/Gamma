@@ -260,17 +260,16 @@ PLASMIC.registerComponent(ScrollDetector, {
 PLASMIC.registerComponent(HoverController, {
   name: "HoverController",
   props: {
-    // Slot 1: Dành riêng cho cái nút để bắt sự kiện hover
-    trigger: {
-      type: "slot",
-      defaultValue: {
-        type: "button",
-        value: "Hover Me (Nút Kích Hoạt)"
-      }
-    },
-    // Slot 2: Nội dung còn lại
-    children: "slot"
+    trigger: "slot",
+    children: "slot",
+    // 👇 Thêm sự kiện này vào
+    onHoverChange: {
+      type: "eventHandler",
+      argTypes: [
+        { name: "isHovered", type: "boolean" }
+      ]
+    }
   },
-  providesData: true, // Quan trọng: Để Plasmic thấy được biến isHovered
+  providesData: true,
   importPath: "./components/HoverController"
 });
