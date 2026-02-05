@@ -40,17 +40,41 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
   className = ''
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  // State để lưu tỷ lệ ảnh (Mặc định là 16:9 để không bị xẹp lúc chưa load)
   const [aspectRatio, setAspectRatio] = useState<number>(16/9); 
+  
+  // 1. Thêm State để kiểm soát Lazy Load
+  const [isVisible, setIsVisible] = useState(false); // Đã cuộn tới chưa?
+  const [isLoaded, setIsLoaded] = useState(false);   // Ảnh đã tải xong chưa?
 
-  // Các Ref giữ nguyên
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const planeRef = useRef<THREE.Mesh | null>(null);
   const animationIdRef = useRef<number | null>(null);
 
+  // 2. Effect dùng IntersectionObserver để phát hiện khi nào cần load
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setIsVisible(true); // Kích hoạt Three.js
+        observer.disconnect(); // Ngắt theo dõi để không chạy lại
+      }
+    }, {
+      rootMargin: '200px' // Load trước khi scroll tới 200px cho mượt
+    });
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // 3. Effect chính (Chỉ chạy khi isVisible = true)
+  useEffect(() => {
+    if (!isVisible) return; // Nếu chưa nhìn thấy thì không làm gì cả
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -70,6 +94,10 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
+    // Thêm style để fade-in canvas khi ảnh load xong
+    renderer.domElement.style.opacity = '0';
+    renderer.domElement.style.transition = 'opacity 0.5s ease-in-out';
+
     const camera = new THREE.OrthographicCamera(0, 0, 0, 0, -1000, 1000);
     camera.position.z = 2;
     cameraRef.current = camera;
@@ -81,7 +109,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       uDataTexture: { value: new THREE.DataTexture() }
     };
 
-    // --- LOAD IMAGE & TÍNH ASPECT RATIO ---
+    // --- LOAD IMAGE ---
     const textureLoader = new THREE.TextureLoader();
     const currentImage = imageSrc || 'https://via.placeholder.com/800x600/cccccc/969696?text=No+Image';
     
@@ -89,13 +117,19 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
       
-      // 👇 LOGIC MỚI: Cập nhật tỷ lệ khung hình dựa trên ảnh thật
       if (texture.image) {
          const ratio = texture.image.width / texture.image.height;
-         setAspectRatio(ratio); // Cập nhật state để CSS bên dưới tự chỉnh height
+         setAspectRatio(ratio);
       }
 
       uniforms.uTexture.value = texture;
+      
+      // Báo hiệu đã load xong để hiện Canvas
+      setIsLoaded(true);
+      if (renderer.domElement) {
+        renderer.domElement.style.opacity = '1';
+      }
+
       handleResize(); 
     });
 
@@ -136,8 +170,6 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       const containerAspect = width / height;
 
       if (plane) {
-        // Vì Container đã được CSS ép đúng tỷ lệ ảnh, nên ta chỉ cần scale plane theo containerAspect
-        // là ảnh sẽ hiển thị chuẩn 100%, không méo, không cắt.
         plane.scale.set(containerAspect, 1, 1); 
       }
       
@@ -156,8 +188,6 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       const rect = container.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1 - (e.clientY - rect.top) / rect.height;
-      mouseState.vX = x - mouseState.prevX;
-      mouseState.vY = y - mouseState.prevY;
       Object.assign(mouseState, { x, y, prevX: x, prevY: y });
     };
 
@@ -202,11 +232,17 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       resizeObserver.disconnect();
       container.removeEventListener('mousemove', handleMouseMove);
-      if (renderer) renderer.dispose();
+      if (renderer) {
+        renderer.dispose();
+        // Kiểm tra an toàn trước khi remove child
+        if (container && renderer.domElement && container.contains(renderer.domElement)) {
+           container.removeChild(renderer.domElement);
+        }
+      }
       if (uniforms.uTexture.value) uniforms.uTexture.value.dispose();
       if (uniforms.uDataTexture.value) uniforms.uDataTexture.value.dispose();
     };
-  }, [imageSrc, grid, mouse, strength, relaxation]); // Re-run khi ảnh đổi
+  }, [imageSrc, grid, mouse, strength, relaxation, isVisible]); // Thêm isVisible vào dependencies
 
   return (
     <div 
@@ -214,15 +250,23 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       className={className}
       style={{
         width: '100%',
-        // 👇 QUAN TRỌNG: Dùng aspectRatio để tự tính chiều cao theo ảnh
-        // Nếu width thay đổi, height sẽ tự chạy theo.
         aspectRatio: `${aspectRatio}`, 
-        
-        // height: 'auto' là mặc định nên không cần set, nhưng đảm bảo không set fixed height
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        // Thêm màu nền xám nhẹ để giữ chỗ khi ảnh chưa load
+        backgroundColor: isLoaded ? 'transparent' : '#f0f0f0',
+        transition: 'background-color 0.5s ease'
       }}
-    />
+    >
+      {/* (Optional) Có thể thêm Loading Spinner ở đây nếu muốn */}
+      {!isLoaded && isVisible && (
+         <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#999'
+         }}>
+            Loading...
+         </div>
+      )}
+    </div>
   );
 };
 
