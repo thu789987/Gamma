@@ -146,25 +146,39 @@ PLASMIC.registerComponent(TypingAnimation, {
 PLASMIC.registerComponent(GridDistortion, {
   name: "GridDistortion",
   props: {
+    // Chỉ cần chọn ảnh
     imageSrc: {
       type: "imageUrl",
-      defaultValue: "https://via.placeholder.com/800x600"
+      displayName: "Image Source",
+      defaultValue: "https://picsum.photos/1920/1080",
     },
-    // 👇 THÊM DÒNG NÀY
     enableEffect: {
       type: "boolean",
       defaultValue: true,
       displayName: "⚡ Enable Distortion", // Tên hiển thị cho dễ nhìn
       description: "Tắt đi để tăng tốc độ nếu máy bị lag"
     },
+    // Các thông số chỉnh độ méo
     grid: {
       type: "number",
-      defaultValue: 15,
+      defaultValue: 20,
       displayName: "Grid Size"
     },
-    mouse: "number",
-    strength: "number",
-    relaxation: "number"
+    mouse: {
+      type: "number",
+      defaultValue: 0.1,
+      displayName: "Mouse Radius"
+    },
+    strength: {
+      type: "number",
+      defaultValue: 0.25,
+      displayName: "Distortion Strength"
+    },
+    relaxation: {
+      type: "number",
+      defaultValue: 0.9,
+      displayName: "Relaxation"
+    }
   },
   importPath: "./components/GridDistortion"
 });
