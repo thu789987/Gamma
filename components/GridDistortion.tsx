@@ -53,9 +53,9 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animationIdRef = useRef<number | null>(null);
 
-  // 👇 LOGIC QUYẾT ĐỊNH: Chỉ bật khi User muốn BẬT và Chiều cao < 800px
+  // 👇 LOGIC QUYẾT ĐỊNH: Chỉ bật khi User muốn BẬT và Chiều cao < 950px
   // (Hoặc containerHeight = 0 nghĩa là chưa đo xong thì cứ tạm bật)
-  const shouldEnable = enableEffect && (containerHeight < 800 || containerHeight === 0);
+  const shouldEnable = enableEffect && (containerHeight < 950 || containerHeight === 0);
 
   // 1. Observer đo chiều cao & Intersection
   useEffect(() => {
