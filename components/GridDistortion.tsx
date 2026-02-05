@@ -8,11 +8,9 @@ interface GridDistortionProps {
   strength?: number;
   relaxation?: number;
   className?: string;
-  // 👇 THÊM PROP NÀY
-  enableEffect?: boolean; 
+  enableEffect?: boolean; // Prop bật tắt hiệu ứng
 }
 
-// ... (Giữ nguyên đoạn Vertex Shader và Fragment Shader để code gọn) ...
 const vertexShader = `
 uniform float time;
 varying vec2 vUv;
@@ -41,7 +39,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
   strength = 0.15,
   relaxation = 0.9,
   className = '',
-  enableEffect = true // 👇 Mặc định là BẬT
+  enableEffect = true
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [aspectRatio, setAspectRatio] = useState<number>(16/9); 
@@ -51,7 +49,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animationIdRef = useRef<number | null>(null);
 
-  // 1. Observer (Giữ nguyên)
+  // 1. Observer: Chỉ bắt đầu load khi cuộn tới gần
   useEffect(() => {
     if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
       setIsVisible(true);
@@ -71,9 +69,9 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // 2. Logic chính (Đã sửa để hỗ trợ Tắt Effect)
+  // 2. Main Logic Three.js
   useEffect(() => {
-    // 👇 NẾU TẮT EFFECT: Thì không chạy Three.js nữa, chỉ set Loaded để hiện ảnh tĩnh
+    // Nếu tắt hiệu ứng -> Báo đã load xong để hiện ảnh tĩnh ngay
     if (!enableEffect) {
       setIsLoaded(true);
       return; 
@@ -84,30 +82,36 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    // CLEANUP CŨ
-    if (rendererRef.current) rendererRef.current.dispose();
-    if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+    // --- CLEANUP CŨ TRƯỚC KHI CHẠY MỚI ---
+    if (rendererRef.current) {
+        rendererRef.current.dispose();
+    }
+    if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+    }
     
-    // --- SETUP THREE.JS ---
+    // --- SETUP SCENE ---
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(0, 0, 0, 0, -1000, 1000);
     camera.position.z = 2;
 
     const renderer = new THREE.WebGLRenderer({
-      antialias: true, alpha: true, powerPreference: 'high-performance'
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance'
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
+    
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
-    // Style cho Canvas
+    // Style Canvas
     renderer.domElement.style.opacity = '0';
     renderer.domElement.style.transition = 'opacity 0.5s ease-in-out';
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
     renderer.domElement.style.display = 'block';
-    // 👇 Quan trọng: Canvas phải nằm tuyệt đối đè lên để khớp vị trí
     renderer.domElement.style.position = 'absolute'; 
     renderer.domElement.style.top = '0';
     renderer.domElement.style.left = '0';
@@ -119,7 +123,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       uDataTexture: { value: new THREE.DataTexture() }
     };
 
-    // --- LOAD IMAGE ---
+    // --- LOAD ẢNH ---
     const textureLoader = new THREE.TextureLoader();
     const currentImage = imageSrc || 'https://via.placeholder.com/800x600';
     
@@ -135,23 +139,31 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       handleResize(); 
     });
 
-    // ... (Đoạn tạo Data Texture và Mesh giữ nguyên như cũ để tiết kiệm dòng) ...
-    // ... Copy đoạn logic Physics từ bài trước vào đây ...
-
-    // Fake đoạn logic Physics để code chạy được (bạn copy đoạn full cũ vào nhé)
+    // --- SETUP PHYSICS DATA (Cái này quan trọng để tạo hiệu ứng) ---
     const size = grid;
     const data = new Float32Array(4 * size * size);
+    // Khởi tạo nhiễu ngẫu nhiên ban đầu
+    for (let i = 0; i < size * size; i++) {
+      data[i * 4] = Math.random() * 255 - 125;
+      data[i * 4 + 1] = Math.random() * 255 - 125;
+    }
     const dataTexture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.FloatType);
     dataTexture.needsUpdate = true;
     uniforms.uDataTexture.value = dataTexture;
+
+    // --- MESH ---
     const material = new THREE.ShaderMaterial({
-      side: THREE.DoubleSide, uniforms, vertexShader, fragmentShader, transparent: true
+      side: THREE.DoubleSide,
+      uniforms,
+      vertexShader,
+      fragmentShader,
+      transparent: true
     });
     const geometry = new THREE.PlaneGeometry(1, 1, size - 1, size - 1);
     const plane = new THREE.Mesh(geometry, material);
     scene.add(plane);
-    // ... Hết đoạn Fake ...
 
+    // --- HANDLE RESIZE ---
     const handleResize = () => {
       if (!container || !renderer) return;
       const rect = container.getBoundingClientRect();
@@ -159,6 +171,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       uniforms.resolution.value.set(rect.width, rect.height, 1, 1);
       const containerAspect = rect.width / rect.height;
       plane.scale.set(containerAspect, 1, 1); 
+      
       const frustumHeight = 1;
       const frustumWidth = frustumHeight * containerAspect;
       camera.left = -frustumWidth / 2;
@@ -168,11 +181,14 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       camera.updateProjectionMatrix();
     };
 
+    // --- MOUSE EVENTS ---
     const mouseState = { x: 0, y: 0, prevX: 0, prevY: 0, vX: 0, vY: 0 };
     const handleMouseMove = (e: MouseEvent) => {
       const rect = container.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = 1 - (e.clientY - rect.top) / rect.height;
+      mouseState.vX = x - mouseState.prevX;
+      mouseState.vY = y - mouseState.prevY;
       Object.assign(mouseState, { x, y, prevX: x, prevY: y });
     };
 
@@ -180,29 +196,68 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     const resizeObserver = new ResizeObserver(() => handleResize());
     resizeObserver.observe(container);
 
+    // --- ANIMATION LOOP (Đây là phần bị thiếu ở câu trả lời trước) ---
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
       uniforms.time.value += 0.05;
-      // ... Logic Physics update (Copy từ bài cũ) ...
+
+      // Logic tính toán vật lý (Physics)
+      if (dataTexture && dataTexture.image && dataTexture.image.data) {
+          const data = dataTexture.image.data;
+          
+          // Giảm dần lực (Relaxation)
+          for (let i = 0; i < size * size; i++) {
+            data[i * 4] *= relaxation;
+            data[i * 4 + 1] *= relaxation;
+          }
+
+          // Tính toán lực đẩy từ chuột
+          const gridMouseX = size * mouseState.x;
+          const gridMouseY = size * mouseState.y;
+          const maxDist = size * mouse;
+
+          for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+              const distSq = Math.pow(gridMouseX - i, 2) + Math.pow(gridMouseY - j, 2);
+              
+              if (distSq < maxDist * maxDist) {
+                const index = 4 * (i + size * j);
+                const power = Math.min(maxDist / Math.sqrt(distSq), 10);
+                
+                // Áp dụng lực vào Grid
+                data[index] += strength * 100 * mouseState.vX * power;
+                data[index + 1] -= strength * 100 * mouseState.vY * power;
+              }
+            }
+          }
+          mouseState.vX *= 0.9;
+          mouseState.vY *= 0.9;
+          dataTexture.needsUpdate = true;
+      }
+
       renderer.render(scene, camera);
     };
     animate();
 
+    // --- CLEANUP FUNCTION ---
     return () => {
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       resizeObserver.disconnect();
       container.removeEventListener('mousemove', handleMouseMove);
+      
       if (uniforms.uTexture.value) uniforms.uTexture.value.dispose();
       if (uniforms.uDataTexture.value) uniforms.uDataTexture.value.dispose();
+
       if (rendererRef.current) {
         rendererRef.current.dispose();
         rendererRef.current.forceContextLoss();
+        // Xóa Canvas an toàn
         if (container.contains(rendererRef.current.domElement)) {
             container.removeChild(rendererRef.current.domElement);
         }
       }
     };
-  }, [isVisible, imageSrc, grid, mouse, strength, relaxation, enableEffect]); // 👈 Thêm enableEffect vào dependency
+  }, [isVisible, imageSrc, grid, mouse, strength, relaxation, enableEffect]); 
 
   return (
     <div 
@@ -213,12 +268,11 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
         aspectRatio: `${aspectRatio}`, 
         position: 'relative',
         overflow: 'hidden',
-        // Nếu tắt effect thì nền trong suốt luôn, ngược lại thì loading xám
         backgroundColor: (!enableEffect || isLoaded) ? 'transparent' : '#f0f0f0',
         transition: 'background-color 0.5s ease'
       }}
     >
-      {/* TRƯỜNG HỢP 1: NẾU TẮT EFFECT -> HIỆN ẢNH TĨNH */}
+      {/* 1. HIỆN ẢNH TĨNH (NẾU TẮT EFFECT) */}
       {!enableEffect && (
         <img 
           src={imageSrc} 
@@ -226,10 +280,9 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover', // Đảm bảo ảnh lấp đầy khung như canvas
+            objectFit: 'cover',
             display: 'block'
           }}
-          // Cập nhật tỷ lệ khung hình khi ảnh thật load xong
           onLoad={(e) => {
             const img = e.currentTarget;
             setAspectRatio(img.naturalWidth / img.naturalHeight);
@@ -238,7 +291,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
         />
       )}
 
-      {/* TRƯỜNG HỢP 2: LOADING SPINNER (Chỉ hiện khi đang bật effect mà chưa load xong) */}
+      {/* 2. LOADING (KHI ĐANG BẬT EFFECT MÀ CHƯA LOAD XONG) */}
       {enableEffect && !isLoaded && isVisible && (
          <div style={{
             position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#999'
