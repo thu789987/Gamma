@@ -11,7 +11,6 @@ interface GridDistortionProps {
   enableEffect?: boolean; 
 }
 
-// ... Vertex/Fragment Shader giữ nguyên (đã rút gọn để dễ nhìn) ...
 const vertexShader = `
 uniform float time;
 varying vec2 vUv;
@@ -47,31 +46,26 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // 👇 STATE MỚI: Theo dõi chiều cao thực tế
   const [containerHeight, setContainerHeight] = useState(0);
 
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animationIdRef = useRef<number | null>(null);
 
-  // 👇 LOGIC QUYẾT ĐỊNH: Chỉ bật khi User muốn BẬT và Chiều cao < 950px
-  // (Hoặc containerHeight = 0 nghĩa là chưa đo xong thì cứ tạm bật)
   const shouldEnable = enableEffect && (containerHeight < 950 || containerHeight === 0);
 
-  // 1. Observer đo chiều cao & Intersection
+  // 1. Observer
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // A. Đo chiều cao liên tục
     const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        // Cập nhật chiều cao thực tế vào State
+      // 👇 SỬA LỖI 1: Đổi 'let' thành 'const'
+      for (const entry of entries) {
         setContainerHeight(entry.contentRect.height);
       }
     });
     resizeObserver.observe(container);
 
-    // B. Kiểm tra xem có cuộn tới chưa (Lazy Load)
     if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
       const intersectionObserver = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
@@ -91,9 +85,8 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     }
   }, []);
 
-  // 2. Main Logic Three.js (Phụ thuộc vào biến shouldEnable mới)
+  // 2. Main Logic Three.js
   useEffect(() => {
-    // Nếu điều kiện không thỏa mãn -> Tắt ThreeJS, báo Loaded để hiện ảnh tĩnh
     if (!shouldEnable) {
       setIsLoaded(true);
       return; 
@@ -104,11 +97,9 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
-    // ... CLEANUP CŨ ...
     if (rendererRef.current) rendererRef.current.dispose();
     if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
     
-    // ... SETUP THREE JS (Giữ nguyên như cũ) ...
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(0, 0, 0, 0, -1000, 1000);
     camera.position.z = 2;
@@ -153,7 +144,6 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       handleResize(); 
     });
 
-    // ... PHYSICS & MESH (Giữ nguyên đoạn tạo dataTexture, plane...) ...
     const size = grid;
     const data = new Float32Array(4 * size * size);
     for (let i = 0; i < size * size; i++) {
@@ -174,7 +164,6 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     const handleResize = () => {
       if (!container || !renderer) return;
       const rect = container.getBoundingClientRect();
-      // Cập nhật lại height vào state ở đây nữa cho chắc chắn
       setContainerHeight(rect.height); 
 
       renderer.setSize(rect.width, rect.height);
@@ -251,7 +240,7 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
         }
       }
     };
-  }, [isVisible, imageSrc, grid, mouse, strength, relaxation, shouldEnable]); // 👈 Thay enableEffect bằng shouldEnable
+  }, [isVisible, imageSrc, grid, mouse, strength, relaxation, shouldEnable]); 
 
   return (
     <div 
@@ -262,13 +251,13 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
         aspectRatio: `${aspectRatio}`, 
         position: 'relative',
         overflow: 'hidden',
-        // Logic màu nền dựa trên shouldEnable
         backgroundColor: (!shouldEnable || isLoaded) ? 'transparent' : '#f0f0f0',
         transition: 'background-color 0.5s ease'
       }}
     >
-      {/* NẾU KHÔNG ĐƯỢC PHÉP CHẠY EFFECT -> HIỆN ẢNH TĨNH */}
       {!shouldEnable && (
+        // 👇 SỬA CẢNH BÁO: Thêm dòng eslint-disable để Next.js không càm ràm nữa
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img 
           src={imageSrc} 
           alt="project"
@@ -282,7 +271,6 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
             const img = e.currentTarget;
             setAspectRatio(img.naturalWidth / img.naturalHeight);
             setIsLoaded(true);
-            // Cập nhật lại height khi ảnh load xong
             if (containerRef.current) {
                 setContainerHeight(containerRef.current.offsetHeight);
             }
