@@ -47,21 +47,29 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   
   const [containerHeight, setContainerHeight] = useState(0);
+  // 👇 Dùng Ref để lưu chiều cao cũ, giúp so sánh mà không gây re-render
+  const prevHeightRef = useRef(0);
 
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animationIdRef = useRef<number | null>(null);
 
-  const shouldEnable = enableEffect && (containerHeight < 950 || containerHeight === 0);
+  // Chỉ tắt khi đã đo được chiều cao (>0) và chiều cao > 800
+  const shouldEnable = enableEffect && (containerHeight === 0 || containerHeight < 950);
 
-  // 1. Observer
+  // 1. Observer: Đo chiều cao an toàn (Chống Loop)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
-      // 👇 SỬA LỖI 1: Đổi 'let' thành 'const'
       for (const entry of entries) {
-        setContainerHeight(entry.contentRect.height);
+        const newHeight = entry.contentRect.height;
+        // 👇 QUAN TRỌNG: Chỉ set State nếu chiều cao thay đổi > 5px
+        // Điều này ngăn chặn vòng lặp vô hạn do chênh lệch sub-pixel
+        if (Math.abs(newHeight - prevHeightRef.current) > 5) {
+            prevHeightRef.current = newHeight;
+            setContainerHeight(newHeight);
+        }
       }
     });
     resizeObserver.observe(container);
@@ -161,11 +169,11 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
     const plane = new THREE.Mesh(geometry, material);
     scene.add(plane);
 
+    // 👇 Hàm resize này CHỈ chỉnh ThreeJS, KHÔNG được setContainerHeight nữa (để tránh loop)
     const handleResize = () => {
       if (!container || !renderer) return;
       const rect = container.getBoundingClientRect();
-      setContainerHeight(rect.height); 
-
+      
       renderer.setSize(rect.width, rect.height);
       uniforms.resolution.value.set(rect.width, rect.height, 1, 1);
       const containerAspect = rect.width / rect.height;
@@ -256,7 +264,6 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
       }}
     >
       {!shouldEnable && (
-        // 👇 SỬA CẢNH BÁO: Thêm dòng eslint-disable để Next.js không càm ràm nữa
         /* eslint-disable-next-line @next/next/no-img-element */
         <img 
           src={imageSrc} 
@@ -271,8 +278,11 @@ const GridDistortion: React.FC<GridDistortionProps> = ({
             const img = e.currentTarget;
             setAspectRatio(img.naturalWidth / img.naturalHeight);
             setIsLoaded(true);
+            // Đo chiều cao lần đầu khi ảnh load xong
             if (containerRef.current) {
-                setContainerHeight(containerRef.current.offsetHeight);
+                const h = containerRef.current.offsetHeight;
+                prevHeightRef.current = h;
+                setContainerHeight(h);
             }
           }}
         />
