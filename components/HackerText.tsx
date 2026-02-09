@@ -1,21 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Danh sách ký tự random giống code cũ của bạn
 const LETTERS = "QWERTYUIOPASDFGHJKLZXCVBNM";
 
-export default function HackerText({ text = "MENU ITEM", className }: { text: string, className?: string }) {
+interface HackerTextProps {
+  text?: string;
+  className?: string;
+}
+
+export default function HackerText({ text = "MENU ITEM", className }: HackerTextProps) {
   const [displayText, setDisplayText] = useState(text);
-  const intervalRef = useRef<any>(null);
+  
+  // ✅ FIX LỖI 1: Thay 'any' bằng kiểu dữ liệu chuẩn của setInterval
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startScramble = () => {
     let iteration = 0;
-    clearInterval(intervalRef.current);
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
-      setDisplayText(prev => 
+      // ✅ FIX LỖI 2: Thay 'prev' bằng '()' vì chúng ta không dùng biến prev
+      setDisplayText(() => 
         text
           .split("")
-          .map((letter, index) => {
+          .map((_letter, index) => { // Thêm dấu _ trước letter để báo là biến này cũng không quan trọng
             if (index < iteration) {
               return text[index];
             }
@@ -25,21 +33,18 @@ export default function HackerText({ text = "MENU ITEM", className }: { text: st
       );
 
       if (iteration >= text.length) {
-        clearInterval(intervalRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current);
       }
       
-      // Tốc độ giải mã: cứ 3 lần chạy thì giải mã 1 ký tự
       iteration += 1 / 3; 
-    }, 30); // Tốc độ chạy chữ (ms)
+    }, 30);
   };
 
-  // Reset về chữ gốc khi chuột rời đi
   const stopScramble = () => {
-    clearInterval(intervalRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
     setDisplayText(text);
   };
 
-  // Cập nhật text nếu prop thay đổi trên Plasmic
   useEffect(() => {
     setDisplayText(text);
   }, [text]);
@@ -49,7 +54,7 @@ export default function HackerText({ text = "MENU ITEM", className }: { text: st
       className={className}
       onMouseEnter={startScramble}
       onMouseLeave={stopScramble}
-      style={{ fontFamily: 'Orbitron, sans-serif', cursor: 'pointer' }} // Font chữ style cũ
+      style={{ fontFamily: 'Orbitron, sans-serif', cursor: 'pointer' }}
     >
       {displayText}
     </div>
